@@ -1,12 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  experimental: {
-    agentFeedback: true,
-  },
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Auth admin console is fully client-driven (session in localStorage +
+  // usePathname/useRouter). cacheComponents/PPR prerender fails on those hooks.
   turbopack: {
     rules: {
       "*.css": {

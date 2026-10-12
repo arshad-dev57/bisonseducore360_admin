@@ -1,8 +1,18 @@
-"use client";
-
+import { Suspense, type ReactNode } from "react";
 import AdminShell from "@/components/admin-shell";
-import type { ReactNode } from "react";
+
+export const dynamic = "force-dynamic";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return <AdminShell>{children}</AdminShell>;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">
+          Loading…
+        </div>
+      }
+    >
+      <AdminShell>{children}</AdminShell>
+    </Suspense>
+  );
 }
