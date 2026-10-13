@@ -21,6 +21,10 @@ export default function SchoolDetailPage() {
   const [school, setSchool] = useState<SchoolDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionOk, setActionOk] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [trialDays, setTrialDays] = useState(5);
 
   useEffect(() => {
     if (!id) return;
@@ -44,6 +48,21 @@ export default function SchoolDetailPage() {
       cancelled = true;
     };
   }, [id]);
+
+  async function runAction(key: string, fn: () => Promise<{ school: SchoolDetail }>, okMessage: string) {
+    setBusy(key);
+    setActionError(null);
+    setActionOk(null);
+    try {
+      const res = await fn();
+      setSchool(res.school);
+      setActionOk(okMessage);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Action failed.");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   if (loading) {
     return <p className="py-16 text-center text-[13px] text-slate-500">Loading school…</p>;
@@ -70,6 +89,8 @@ export default function SchoolDetailPage() {
     { label: "Classes", value: school.counts.classes },
     { label: "Invoices", value: school.counts.feeInvoices },
   ];
+
+  const schoolActive = school.isActive !== false;
 
   return (
     <div className="space-y-5">
@@ -109,21 +130,145 @@ export default function SchoolDetailPage() {
             ) : null}
           </div>
         </div>
-        <span
-          className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${
-            school.subscription?.active
-              ? school.subscription.isTrial
-                ? "bg-amber-50 text-amber-700"
-                : "bg-emerald-50 text-emerald-700"
-              : "bg-rose-50 text-rose-700"
-          }`}
-        >
-          {school.subscription?.status || "EXPIRED"}
-          {school.subscription?.daysRemaining != null
-            ? ` · ${school.subscription.daysRemaining}d left`
-            : ""}
-        </span>
+        <div className="flex flex-col items-start gap-2 sm:items-end">
+          <span
+            className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${
+              schoolActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-200 text-slate-600"
+            }`}
+          >
+            {schoolActive ? "School Active" : "School Deactivated"}
+          </span>
+          <span
+            className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${
+              school.subscription?.active
+                ? school.subscription.isTrial
+                  ? "bg-amber-50 text-amber-700"
+                  : "bg-emerald-50 text-emerald-700"
+                : "bg-rose-50 text-rose-700"
+            }`}
+          >
+            {school.subscription?.status || "EXPIRED"}
+            {school.subscription?.daysRemaining != null
+              ? ` · ${school.subscription.daysRemaining}d left`
+              : ""}
+          </span>
+        </div>
       </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <h2 className="mb-1 text-[15px] font-semibold">Manage access & plan</h2>
+        <p className="mb-4 text-[13px] text-slate-500">
+          Deactivating blocks every user of this school from signing in. Plan changes apply
+          immediately on the main BisonsEduCore360 app.
+        </p>
+
+        {actionError ? (
+          <p className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">
+            {actionError}
+          </p>
+        ) : null}
+        {actionOk ? (
+          <p className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-700">
+            {actionOk}
+          </p>
+        ) : null}
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-[13px] font-semibold text-slate-800">School status</p>
+            <p className="mt-1 text-[12px] text-slate-500">
+              {schoolActive
+                ? "Currently active — users can sign in (if plan is valid)."
+                : "Deactivated — login is blocked for all users."}
+            </p>
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() =>
+                runAction(
+                  "status",
+                  () => platformApi.setSchoolActive(school.id, !schoolActive),
+                  schoolActive ? "School deactivated." : "School activated."
+                )
+              }
+              className={`mt-3 h-10 w-full rounded-xl text-[13px] font-semibold text-white disabled:opacity-60 ${
+                schoolActive ? "bg-rose-600 hover:bg-rose-700" : "bg-emerald-600 hover:bg-emerald-700"
+              }`}
+            >
+              {busy === "status" ? "Saving…" : schoolActive ? "Deactivate school" : "Activate school"}
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-[13px] font-semibold text-slate-800">Extend trial</p>
+            <p className="mt-1 text-[12px] text-slate-500">
+              Adds days to an active trial, or starts a fresh trial if needed.
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={trialDays}
+                onChange={(e) => setTrialDays(Number(e.target.value) || 5)}
+                className="h-10 w-20 rounded-xl border border-slate-200 bg-white px-3 text-[13px] outline-none focus:border-indigo-500"
+              />
+              <span className="text-[12px] text-slate-500">days</span>
+            </div>
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() =>
+                runAction(
+                  "trial",
+                  () => platformApi.extendTrial(school.id, trialDays),
+                  `Trial extended by ${trialDays} day(s).`
+                )
+              }
+              className="mt-3 h-10 w-full rounded-xl bg-amber-600 text-[13px] font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
+            >
+              {busy === "trial" ? "Saving…" : "Extend trial"}
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-[13px] font-semibold text-slate-800">Set paid plan</p>
+            <p className="mt-1 text-[12px] text-slate-500">
+              Starts a new period from today (Monthly = 30 days, Yearly = 365).
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() =>
+                  runAction(
+                    "monthly",
+                    () => platformApi.setPlan(school.id, "MONTHLY"),
+                    "Plan set to Monthly."
+                  )
+                }
+                className="h-10 rounded-xl bg-indigo-600 text-[13px] font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+              >
+                {busy === "monthly" ? "…" : "Monthly"}
+              </button>
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() =>
+                  runAction(
+                    "yearly",
+                    () => platformApi.setPlan(school.id, "YEARLY"),
+                    "Plan set to Yearly."
+                  )
+                }
+                className="h-10 rounded-xl bg-indigo-600 text-[13px] font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+              >
+                {busy === "yearly" ? "…" : "Yearly"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {counts.map((c) => (

@@ -28,6 +28,8 @@ export type SchoolListItem = {
   country: string;
   city: string;
   logoUrl: string | null;
+  /** Platform kill-switch — false means the school cannot sign in. */
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
   branches: number;
@@ -53,6 +55,7 @@ export type SchoolDetail = {
   academicSession: string | null;
   instituteNo: string | null;
   logoUrl: string | null;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
   counts: {
@@ -160,6 +163,7 @@ export const platformApi = {
         activeSubscriptions: number;
         trialSchools: number;
         expiredSchools: number;
+        deactivatedSchools?: number;
       };
       recentSchools: SchoolListItem[];
     }>("/platform/dashboard"),
@@ -171,4 +175,22 @@ export const platformApi = {
 
   school: (id: string) =>
     request<{ school: SchoolDetail }>(`/platform/schools/${id}`),
+
+  setSchoolActive: (id: string, isActive: boolean) =>
+    request<{ school: SchoolDetail }>(`/platform/schools/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ isActive }),
+    }),
+
+  extendTrial: (id: string, days = 5) =>
+    request<{ school: SchoolDetail }>(`/platform/schools/${id}/extend-trial`, {
+      method: "POST",
+      body: JSON.stringify({ days }),
+    }),
+
+  setPlan: (id: string, plan: "MONTHLY" | "YEARLY") =>
+    request<{ school: SchoolDetail }>(`/platform/schools/${id}/set-plan`, {
+      method: "POST",
+      body: JSON.stringify({ plan }),
+    }),
 };

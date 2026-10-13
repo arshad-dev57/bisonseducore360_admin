@@ -19,6 +19,7 @@ type Stats = {
   activeSubscriptions: number;
   trialSchools: number;
   expiredSchools: number;
+  deactivatedSchools?: number;
 };
 
 export default function DashboardPage() {
@@ -55,6 +56,7 @@ export default function DashboardPage() {
     { label: "Active plans", value: stats?.activeSubscriptions, Icon: BadgeCheck, tone: "bg-violet-50 text-violet-700" },
     { label: "On trial", value: stats?.trialSchools, Icon: Hourglass, tone: "bg-amber-50 text-amber-700" },
     { label: "Expired", value: stats?.expiredSchools, Icon: Ban, tone: "bg-rose-50 text-rose-700" },
+    { label: "Deactivated", value: stats?.deactivatedSchools ?? 0, Icon: Ban, tone: "bg-slate-100 text-slate-600" },
   ];
 
   return (

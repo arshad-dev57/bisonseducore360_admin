@@ -61,13 +61,14 @@ export default function SchoolsPage() {
       ) : null}
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="hidden grid-cols-[minmax(180px,1.4fr)_140px_120px_100px_100px_110px] gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2.5 text-[12px] font-medium text-slate-500 md:grid">
+        <div className="hidden grid-cols-[minmax(180px,1.4fr)_140px_120px_90px_90px_100px_110px] gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2.5 text-[12px] font-medium text-slate-500 md:grid">
           <span>School</span>
           <span>Owner</span>
           <span>City</span>
           <span>Students</span>
           <span>Users</span>
-          <span>Status</span>
+          <span>Access</span>
+          <span>Plan</span>
         </div>
 
         {loading ? (
@@ -80,7 +81,7 @@ export default function SchoolsPage() {
               <Link
                 key={s.id}
                 href={`/schools/${s.id}`}
-                className="grid gap-2 px-4 py-3 transition hover:bg-slate-50 md:grid-cols-[minmax(180px,1.4fr)_140px_120px_100px_100px_110px] md:items-center md:gap-3"
+                className="grid gap-2 px-4 py-3 transition hover:bg-slate-50 md:grid-cols-[minmax(180px,1.4fr)_140px_120px_90px_90px_100px_110px] md:items-center md:gap-3"
               >
                 <div className="min-w-0">
                   <p className="truncate text-[14px] font-semibold">{s.name}</p>
@@ -93,6 +94,15 @@ export default function SchoolsPage() {
                 </p>
                 <p className="text-[13px] font-medium">{s.students}</p>
                 <p className="text-[13px] font-medium">{s.users}</p>
+                <span
+                  className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                    s.isActive !== false
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-slate-200 text-slate-600"
+                  }`}
+                >
+                  {s.isActive !== false ? "Active" : "Off"}
+                </span>
                 <span
                   className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
                     s.subscription?.active
